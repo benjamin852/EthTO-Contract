@@ -20,6 +20,8 @@ contract SoulFund is
     bytes32 public constant BENEFICIARY_ROLE = keccak256("BENEFICIARY_ROLE");
     CountersUpgradeable.Counter private _tokenIdCounter;
 
+    uint256 vestingDate;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() payable {
         _disableInitializers();
@@ -38,6 +40,8 @@ contract SoulFund is
         _grantRole(PAUSER_ROLE, msg.sender);
         _grantRole(GRANTER_ROLE, _msgSender());
         _grantRole(BENEFICIARY_ROLE, _beneficiary);
+
+        vestingDate = _vestingDate;
     }
 
     function pause() public onlyRole(PAUSER_ROLE) {
