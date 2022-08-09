@@ -8,17 +8,33 @@ const hre = require("hardhat");
 
 async function main() {
 
+  const provider = hre.ethers.provider;
+  const deployer = new hre.ethers.Wallet(process.env.AURORA_PRIVATE_KEY, provider);
 
-  // const Lock = await hre.ethers.getContractFactory("Lock");
-  // const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
+  console.log(
+    "Deployer account:",
+    deployer.address
+  );
+  
+  const admin = deployer.address;
+  const pauser = deployer.address;
+  const beneficiary = deployer.address;
 
-  // await lock.deployed();
+  const SoulFund = await hre.ethers.getContractFactory("SoulFund");
+  const soulfund = await SoulFund.connect(deployer).deploy(admin, pauser, beneficiary);
+  await soulfund.deployed();
 
+  console.log(
+    "Deployed address:",
+    soulfund.address
+  )
 }
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });

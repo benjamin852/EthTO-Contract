@@ -1,13 +1,8 @@
-# Sample Hardhat Project
+# SoulFund - ETHToronto 2022
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+Register your funds as a SOULBOUND TOKEN!
 
-Try running some of the following tasks:
-
+To deploy to Near (Aurora testnet)
 ```shell
-npx hardhat help
-npx hardhat test
-GAS_REPORT=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.js
+npm run deploy_testnet
 ```
