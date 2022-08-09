@@ -32,8 +32,8 @@ contract SoulFund is
     //nftAdddress => isWhitelisted
     mapping(address => bool) public whitelistedNfts;
 
-    //tokenId => beneficiary
-    mapping(uint256 => address) public beneficiaries;
+    //tokenAddress => tokenId => beneficiary
+    mapping(address => mapping(uint256 => address)) public beneficiaries;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() payable {
@@ -115,18 +115,26 @@ contract SoulFund is
         emit NewWhitelistedNFT(_newNftAddress);
     }
 
-    function claimVestedFunds(uint256 _tokenId) external payable {
+    function claimVestedFunds(address _nftAddress, uint256 _tokenId)
+        external
+        payable
+    {
         require(
             block.timestamp > vestingDate,
             "SoulFund.claimVestedFunds: vesting period has not started"
         );
 
         require(
-            beneficiaries[_tokenId] != address(0),
+            whitelistedNfts[_nftAddress],
+            "SoulFund.claimVestedFunds: NFT not whitelisted"
+        );
+
+        require(
+            beneficiaries[_nftAddress][_tokenId] != address(0),
             "SoulFund.claimVestedFunds: new beneficiary corresponds to this token id"
         );
 
-        address beneficiary = beneficiaries[_tokenId];
+        address beneficiary = beneficiaries[_nftAddress][_tokenId];
 
         payable(beneficiary).transfer(msg.value);
 
