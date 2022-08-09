@@ -8,7 +8,7 @@ import "./interfaces/ISoulFund.sol";
 import "./libraries/SoulFundLibrary.sol";
 
 contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
-    struct Attributes{
+    struct Attributes {
         string name;
         string color;
         address aggregator;
@@ -17,27 +17,41 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
     mapping(address => Attributes) tokenToAttributes;
 
     // populate with token names, colors, values
-    function initialize(address[] memory _addresses, 
-        string[] memory _names, 
-        string[] memory _colors, 
+    function initialize(
+        address[] memory _addresses,
+        string[] memory _names,
+        string[] memory _colors,
         address[] memory _aggregators
-    ) initializer public {
-        require(_addresses.length == _names.length && _names.length == _colors.length && _colors.length == _aggregators.length, "Invalid param length");
-        for(uint8 i=0; i<_addresses.length;i++){
-            tokenToAttributes[_addresses[i]] = Attributes({name: _names[i], color: _colors[i], aggregator: _aggregators[i]});
+    ) public initializer {
+        require(
+            _addresses.length == _names.length &&
+                _names.length == _colors.length &&
+                _colors.length == _aggregators.length,
+            "Invalid param length"
+        );
+        for (uint8 i = 0; i < _addresses.length; i++) {
+            tokenToAttributes[_addresses[i]] = Attributes({
+                name: _names[i],
+                color: _colors[i],
+                aggregator: _aggregators[i]
+            });
         }
     }
 
     // generate svg
     // will work more on svg display in am
-    function _svg(ISoulFund.Balances[] memory _balances, uint256 _totalUSD, uint256[] memory _percentages) internal view returns(string memory){
+    function _svg(
+        ISoulFund.Balances[] memory _balances,
+        uint256 _totalUSD,
+        uint256[] memory _percentages
+    ) internal view returns (string memory) {
         string memory svg;
         string memory pie;
         string memory color;
         string memory name;
         uint256 percentage = 1;
 
-        for(uint256 i=0; i<_percentages.length; i++){
+        for (uint256 i = 0; i < _percentages.length; i++) {
             name = tokenToAttributes[_balances[i].token].name;
             color = tokenToAttributes[_balances[i].token].color;
             percentage += _percentages[i];
@@ -47,14 +61,14 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
                 abi.encodePacked(
                     svg,
                     '<svg width="10px" height="5px" x="',
-                    SoulFundLibrary.toString(10*i),
+                    SoulFundLibrary.toString(10 * i),
                     '" y="30">',
                     '<rect style="fill:',
                     color,
                     '" x="25%" y="4" />',
                     '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size:2px;fill: #fff;">',
                     name,
-                    '</text></svg>'
+                    "</text></svg>"
                 )
             );
 
@@ -79,39 +93,53 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
                 '<svg width="40px" height="5px" x="0" y="3">',
                 '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size:3px;fill: #fff;">$',
                 SoulFundLibrary.getDecimalString(_totalUSD),
-                '</text></svg>',
+                "</text></svg>",
                 '<svg id="pie" x="10" y="10" height="20" width="20" viewBox="0 0 20 20">',
                 '<circle r="10" cx="10" cy="10" fill="white" />',
                 pie,
-                '</svg>',
+                "</svg>",
                 svg,
                 '<svg width="40px" height="5px" x="0" y="36">',
                 '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size:2px;fill: #fff;">'
-                '100 Minutes Until Next Vest',
-                '</text></svg>',
-                '<style>#main{background:#000}rect{width:5px;height:1px;}</style></svg>'
+                "100 Minutes Until Next Vest",
+                "</text></svg>",
+                "<style>#main{background:#000}rect{width:5px;height:1px;}</style></svg>"
             )
         );
-        
+
         // base64 encode
         return SoulFundLibrary.encode(bytes(svg));
     }
 
     // generate metadata
-    function _meta(ISoulFund.Balances[] memory _balances) internal view returns(string memory, uint256, uint256[] memory){
+    function _meta(ISoulFund.Balances[] memory _balances)
+        internal
+        view
+        returns (
+            string memory,
+            uint256,
+            uint256[] memory
+        )
+    {
         uint256 totalUSD;
-        uint256[] memory usdValues = new uint[](_balances.length);
-        uint256[] memory percentages = new uint[](_balances.length);
+        uint256[] memory usdValues = new uint256[](_balances.length);
+        uint256[] memory percentages = new uint256[](_balances.length);
         string memory metadataString;
 
         // get USD value of tokens, create total $USD using chainlink aggregator
-        for(uint256 i=0; i<_balances.length; i++){
-           usdValues[i] = _getPrice(tokenToAttributes[_balances[i].token].aggregator) * _balances[i].balance / 1 ether;
-           totalUSD += _getPrice(tokenToAttributes[_balances[i].token].aggregator) * _balances[i].balance / 1 ether;
+        for (uint256 i = 0; i < _balances.length; i++) {
+            usdValues[i] =
+                (_getPrice(tokenToAttributes[_balances[i].token].aggregator) *
+                    _balances[i].balance) /
+                1 ether;
+            totalUSD +=
+                (_getPrice(tokenToAttributes[_balances[i].token].aggregator) *
+                    _balances[i].balance) /
+                1 ether;
         }
 
         // populate metadata with individual token holdings in $USD
-        for(uint256 i=0; i<usdValues.length; i++){
+        for (uint256 i = 0; i < usdValues.length; i++) {
             percentages[i] = SoulFundLibrary.getPercent(usdValues[i], totalUSD);
             metadataString = string(
                 abi.encodePacked(
@@ -127,12 +155,12 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
 
         // populate metadata with Total $USD
         metadataString = string(
-                abi.encodePacked(
-                    metadataString,
-                    '{"trait_type":"Total Value","value":"$',
-                    SoulFundLibrary.getDecimalString(totalUSD),
-                    '"}'
-                )
+            abi.encodePacked(
+                metadataString,
+                '{"trait_type":"Total Value","value":"$',
+                SoulFundLibrary.getDecimalString(totalUSD),
+                '"}'
+            )
         );
 
         // return the percentages calculated and total values
@@ -140,20 +168,30 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
     }
 
     // chainlink aggregator
-    function _getPrice(address _aggregator) internal view returns(uint256){
+    function _getPrice(address _aggregator) internal view returns (uint256) {
         (
-            /*uint80 roundID*/,
-            int v,
-            /*uint startedAt*/,
-            /*uint timeStamp*/,
+            ,
+            /*uint80 roundID*/
+            int256 v,
+            ,
+            ,
+
+        ) = /*uint startedAt*/
+            /*uint timeStamp*/
             /*uint80 answeredInRound*/
-        ) = AggregatorV3Interface(_aggregator).latestRoundData();
-        return uint256(v) * 10 ** 10;
+            AggregatorV3Interface(_aggregator).latestRoundData();
+        return uint256(v) * 10**10;
     }
 
     // render token function called by TokenURI
-    function renderToken(address _soulfund, uint256 _tokenId) public view returns(string memory){
-        ISoulFund.Balances[] memory balances = ISoulFund(_soulfund).balances(_tokenId);
+    function renderToken(address _soulfund, uint256 _tokenId)
+        public
+        view
+        returns (string memory)
+    {
+        ISoulFund.Balances[] memory balances = ISoulFund(_soulfund).balances(
+            _tokenId
+        );
         string memory metadata;
         uint256 totalUSD;
         uint256[] memory percentages;
@@ -175,19 +213,19 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
                                 abi.encodePacked(
                                     '{"name": "SoulFund #',
                                     SoulFundLibrary.toString(_tokenId),
-                                    '",', 
+                                    '",',
                                     '"description": "SoulFund is a Soulbound Time & Merit Based Funding Token.",',
                                     '"image": "data:image/svg+xml;base64,',
                                     svg,
                                     '","attributes": [',
                                     metadata,
-                                    ']}'
-                                    )
+                                    "]}"
                                 )
                             )
                         )
                     )
-                );
+                )
+            );
     }
 
     function _authorizeUpgrade(address) internal override onlyOwner {}

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-library SoulFundLibrary{
+library SoulFundLibrary {
     string internal constant TABLE =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -100,22 +100,28 @@ library SoulFundLibrary{
         return string(buffer);
     }
 
-    function getPercent(uint256 part, uint256 whole) internal pure returns(uint256) {
+    function getPercent(uint256 part, uint256 whole)
+        internal
+        pure
+        returns (uint256)
+    {
         uint256 numerator = part * 1000;
-        if(numerator > part && numerator > whole){
+        if (numerator > part && numerator > whole) {
             uint256 temp = numerator / whole;
             return temp / 10;
-        }
-        else{
+        } else {
             return 0;
         }
-        
     }
 
     // need to fix this algo
-    function getDecimalString(uint256 whole) internal pure returns(string memory){
+    function getDecimalString(uint256 whole)
+        internal
+        pure
+        returns (string memory)
+    {
         uint256 start = whole / 1 ether;
 
-        return toString(start); 
+        return toString(start);
     }
 }
