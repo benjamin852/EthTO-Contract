@@ -63,5 +63,12 @@ contract SoulFundFactory is
         SoulFund soulFund = new SoulFund{value: msg.value}();
         soulFund.initialize(_beneficiary, _vestingDate);
         funds[_fundCounter.current()] = address(soulFund);
+
+        emit NewSoulFundTokenDeployed(
+            address(this),
+            _beneficiary,
+            _vestingDate,
+            msg.value
+        );
     }
 }
