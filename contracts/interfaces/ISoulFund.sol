@@ -3,7 +3,13 @@ pragma solidity ^0.8.7;
 
 interface ISoulFund {
     event NewWhitelistedNFT(address newNftAddress);
-    event VestedFundClaimedEarly(uint256 tokenId, uint256 vestedAmount);
+    event VestedFundsClaimedEarly(
+        uint256 tokenId,
+        uint256 rewardAmount,
+        address nftAddress,
+        uint256 nftTokenId
+    );
+    event VestedFundClaimed(uint256 soulFundId, uint256 vestedAmount);
 
     function addBeneficiary() external;
 
@@ -14,4 +20,6 @@ interface ISoulFund {
         uint256 _soulFundId,
         uint256 _nftId
     ) external payable;
+
+    function claimAllVestedFunds(uint256 _soulFundId) external payable;
 }

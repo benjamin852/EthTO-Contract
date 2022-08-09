@@ -35,6 +35,9 @@ contract SoulFund is
     //tokenId => nftAddress => isWhitelisted
     mapping(uint256 => mapping(address => bool)) public whitelistedNfts;
 
+    //tokenId => nftAddress => isSpent
+    mapping(uint256 => mapping(address => bool)) public nftIsSpent;
+
     //beneficiaryAddress => fundsRemaining
     mapping(address => uint256) public balances;
 
@@ -135,16 +138,45 @@ contract SoulFund is
             IERC721Upgradeable(_nftAddress).ownerOf(_nftId) == beneficiary,
             "SoulFund.claimFundsEarly: beneficiary does not own nft required to claim funds"
         );
+        require(
+            ownerOf(_soulFundId) != address(0),
+            "SoulFund.claimFundsEarly: fund does not exist"
+        );
+        require(
+            !nftIsSpent[_nftId][_nftAddress],
+            "SoulFund.claimFundsEarly: Claim token NFT has already been spent"
+        );
 
+        uint256 amountToTransfer = balances[beneficiary] / FIVE_PERCENT;
+
+        //spend nft
+        nftIsSpent[_nftId][_nftAddress] = true;
+
+        payable(beneficiary).transfer(amountToTransfer);
+
+        emit VestedFundsClaimedEarly(
+            _soulFundId,
+            amountToTransfer,
+            _nftAddress,
+            _nftId
+        );
+    }
+
+    function claimAllVestedFunds(uint256 _soulFundId)
+        external
+        payable
+        override
+    {
+        address beneficiary = ownerOf(_soulFundId);
         require(
             ownerOf(_soulFundId) != address(0),
             "SoulFund.claimFundsEarly: fund does not exist"
         );
 
-        uint256 amountToTransfer = balances[beneficiary] / FIVE_PERCENT;
+        uint256 amountToTransfer = balances[beneficiary];
 
         payable(beneficiary).transfer(amountToTransfer);
 
-        emit VestedFundClaimedEarly(_soulFundId, amountToTransfer);
+        emit VestedFundClaimed(_soulFundId, amountToTransfer);
     }
 }
