@@ -172,14 +172,11 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
         (
             ,
             /*uint80 roundID*/
-            int256 v,
+            int256 v, /*uint startedAt*/ /*uint timeStamp*/ /*uint80 answeredInRound*/
             ,
             ,
 
-        ) = /*uint startedAt*/
-            /*uint timeStamp*/
-            /*uint80 answeredInRound*/
-            AggregatorV3Interface(_aggregator).latestRoundData();
+        ) = AggregatorV3Interface(_aggregator).latestRoundData();
         return uint256(v) * 10**10;
     }
 
