@@ -7,20 +7,29 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 
+import "./interfaces/ISoulFund.sol";
+
 contract SoulFund is
+    ISoulFund,
     Initializable,
     ERC721Upgradeable,
     PausableUpgradeable,
     AccessControlUpgradeable
 {
+    /*** LIBRARIES ***/
     using CountersUpgradeable for CountersUpgradeable.Counter;
 
+    /*** CONSTANTS ***/
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant GRANTER_ROLE = keccak256("GRANTER_ROLE");
     bytes32 public constant BENEFICIARY_ROLE = keccak256("BENEFICIARY_ROLE");
+
+    /*** STORAGE ***/
     CountersUpgradeable.Counter private _tokenIdCounter;
 
     uint256 vestingDate;
+
+    mapping(address => bool) public whitelistedNfts;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() payable {
@@ -79,5 +88,17 @@ contract SoulFund is
         returns (bool)
     {
         return super.supportsInterface(_interfaceId);
+    }
+
+    function addBeneficiary() external override {}
+
+    function whitelistNft(address _newNftAddress)
+        external
+        override
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        whitelistedNfts[_newNftAddress] = true;
+
+        emit NewWhitelistedNFT(_newNftAddress);
     }
 }
