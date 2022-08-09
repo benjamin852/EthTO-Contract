@@ -29,19 +29,72 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
     }
 
     // generate svg
-    // https://codepen.io/my_names_joshua/pen/PoRadQp
     // will work more on svg display in am
-    function _svg(ISoulFund.Balances[] memory _balances, uint256 totalUSD, uint256[] memory percentages) internal view returns(string memory){
+    function _svg(ISoulFund.Balances[] memory _balances, uint256 _totalUSD, uint256[] memory _percentages) internal view returns(string memory){
         string memory svg;
+        string memory pie;
+        string memory color;
+        string memory name;
+        uint256 percentage = 1;
+
+        for(uint256 i=0; i<_percentages.length; i++){
+            name = tokenToAttributes[_balances[i].token].name;
+            color = tokenToAttributes[_balances[i].token].color;
+            percentage += _percentages[i];
+
+            // fill in labels
+            svg = string(
+                abi.encodePacked(
+                    svg,
+                    '<svg width="10px" height="5px" x="',
+                    SoulFundLibrary.toString(10*i),
+                    '" y="30">',
+                    '<rect style="fill:',
+                    color,
+                    '" x="25%" y="4" />',
+                    '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size:2px;fill: #fff;">',
+                    name,
+                    '</text></svg>'
+                )
+            );
+
+            // fill in pie chart
+            pie = string(
+                abi.encodePacked(
+                    '<circle r="5" cx="10" cy="10" fill="transparent" stroke="',
+                    color,
+                    '" stroke-width="10" stroke-dasharray="calc(',
+                    SoulFundLibrary.toString(percentage),
+                    ' * 31.4 / 100) 31.4"'
+                    ' transform="rotate(-90) translate(-20)" />',
+                    pie
+                )
+            );
+        }
+
+        // put it all together
+        svg = string(
+            abi.encodePacked(
+                '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="main" viewBox="0 0 40 40" preserveAspectRatio="xMinYMin meet" shape-rendering="crisp-edges">',
+                '<svg width="40px" height="5px" x="0" y="3">',
+                '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size:3px;fill: #fff;">$',
+                SoulFundLibrary.getDecimalString(_totalUSD),
+                '</text></svg>',
+                '<svg id="pie" x="10" y="10" height="20" width="20" viewBox="0 0 20 20">',
+                '<circle r="10" cx="10" cy="10" fill="white" />',
+                pie,
+                '</svg>',
+                svg,
+                '<svg width="40px" height="5px" x="0" y="36">',
+                '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size:2px;fill: #fff;">'
+                '100 Minutes Until Next Vest',
+                '</text></svg>',
+                '<style>#main{background:#000}rect{width:5px;height:1px;}</style></svg>'
+            )
+        );
         
-        // // get balance of native & erc20s
-        // for(uint256 i=0; i<_balances.length; i++){
-        //     totalUSD += _balances[i].balance / tokenToAttributes[_balances[i].token].value;
-
-        //     // encoded to string for populating svg
-        // }
-
-        return svg;
+        // base64 encode
+        return SoulFundLibrary.encode(bytes(svg));
     }
 
     // generate metadata
@@ -51,13 +104,13 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
         uint256[] memory percentages = new uint[](_balances.length);
         string memory metadataString;
 
-
-        // get balance of native & erc20s
+        // get USD value of tokens, create total $USD using chainlink aggregator
         for(uint256 i=0; i<_balances.length; i++){
            usdValues[i] = _getPrice(tokenToAttributes[_balances[i].token].aggregator) * _balances[i].balance / 1 ether;
            totalUSD += _getPrice(tokenToAttributes[_balances[i].token].aggregator) * _balances[i].balance / 1 ether;
         }
 
+        // populate metadata with individual token holdings in $USD
         for(uint256 i=0; i<usdValues.length; i++){
             percentages[i] = SoulFundLibrary.getPercent(usdValues[i], totalUSD);
             metadataString = string(
@@ -72,6 +125,7 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
             );
         }
 
+        // populate metadata with Total $USD
         metadataString = string(
                 abi.encodePacked(
                     metadataString,
@@ -81,6 +135,7 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
                 )
         );
 
+        // return the percentages calculated and total values
         return (metadataString, totalUSD, percentages);
     }
 
@@ -96,16 +151,20 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
         return uint256(v) * 10 ** 10;
     }
 
-    // render token function
+    // render token function called by TokenURI
     function renderToken(address _soulfund, uint256 _tokenId) public view returns(string memory){
         ISoulFund.Balances[] memory balances = ISoulFund(_soulfund).balances(_tokenId);
         string memory metadata;
         uint256 totalUSD;
         uint256[] memory percentages;
 
+        // pull metadata as well metadata used for svg generation
         (metadata, totalUSD, percentages) = _meta(balances);
+
+        // generate svg
         string memory svg = _svg(balances, totalUSD, percentages);
 
+        // return a base64 encoded json to render
         return
             string(
                 abi.encodePacked(
