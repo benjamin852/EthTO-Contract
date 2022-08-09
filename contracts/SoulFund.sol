@@ -2,6 +2,7 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -24,16 +25,18 @@ contract SoulFund is
     bytes32 public constant GRANTER_ROLE = keccak256("GRANTER_ROLE");
     bytes32 public constant BENEFICIARY_ROLE = keccak256("BENEFICIARY_ROLE");
 
+    uint256 public constant FIVE_PERCENT = 500;
+
     /*** STORAGE ***/
     CountersUpgradeable.Counter private _tokenIdCounter;
 
     uint256 vestingDate;
 
-    //nftAdddress => isWhitelisted
-    mapping(address => bool) public whitelistedNfts;
+    //tokenId => nftAddress => isWhitelisted
+    mapping(uint256 => mapping(address => bool)) public whitelistedNfts;
 
-    //tokenAddress => tokenId => beneficiary
-    mapping(address => mapping(uint256 => address)) public beneficiaries;
+    //beneficiaryAddress => fundsRemaining
+    mapping(address => uint256) public balances;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() payable {
@@ -96,13 +99,13 @@ contract SoulFund is
 
     function addBeneficiary() external override {}
 
-    function whitelistNft(address _newNftAddress)
+    function whitelistNft(address _newNftAddress, uint256 _tokenId)
         external
         override
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
         require(
-            whitelistedNfts[_newNftAddress] == false,
+            whitelistedNfts[_tokenId][_newNftAddress] == false,
             "SoulFund.whitelistNft: address already added"
         );
         require(
@@ -110,34 +113,38 @@ contract SoulFund is
             "SoulFund.whitelistNft: cannot add 0 address"
         );
 
-        whitelistedNfts[_newNftAddress] = true;
+        whitelistedNfts[_tokenId][_newNftAddress] = true;
 
         emit NewWhitelistedNFT(_newNftAddress);
     }
 
-    function claimVestedFunds(address _nftAddress, uint256 _tokenId)
-        external
-        payable
-    {
+    //Claim 5% of funds in contract with claimToken (nft)
+    function claimFundsEarly(
+        address _nftAddress,
+        uint256 _soulFundId,
+        uint256 _nftId
+    ) external payable override {
         require(
-            block.timestamp > vestingDate,
-            "SoulFund.claimVestedFunds: vesting period has not started"
+            whitelistedNfts[_soulFundId][_nftAddress],
+            "SoulFund.claimFundsEarly: NFT not whitelisted"
+        );
+
+        address beneficiary = ownerOf(_soulFundId);
+
+        require(
+            IERC721Upgradeable(_nftAddress).ownerOf(_nftId) == beneficiary,
+            "SoulFund.claimFundsEarly: beneficiary does not own nft required to claim funds"
         );
 
         require(
-            whitelistedNfts[_nftAddress],
-            "SoulFund.claimVestedFunds: NFT not whitelisted"
+            ownerOf(_soulFundId) != address(0),
+            "SoulFund.claimFundsEarly: fund does not exist"
         );
 
-        require(
-            beneficiaries[_nftAddress][_tokenId] != address(0),
-            "SoulFund.claimVestedFunds: new beneficiary corresponds to this token id"
-        );
+        uint256 amountToTransfer = balances[beneficiary] / FIVE_PERCENT;
 
-        address beneficiary = beneficiaries[_nftAddress][_tokenId];
+        payable(beneficiary).transfer(amountToTransfer);
 
-        payable(beneficiary).transfer(msg.value);
-
-        emit VestedFundClaimed(_tokenId, msg.value);
+        emit VestedFundClaimedEarly(_soulFundId, amountToTransfer);
     }
 }
