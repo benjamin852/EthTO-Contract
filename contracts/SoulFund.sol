@@ -97,6 +97,15 @@ contract SoulFund is
         override
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
+        require(
+            whitelistedNfts[_newNftAddress] == false,
+            "SoulFund.whitelistNft: address already added"
+        );
+        require(
+            _newNftAddress != address(0),
+            "SoulFund.whitelistNft: cannot add 0 address"
+        );
+
         whitelistedNfts[_newNftAddress] = true;
 
         emit NewWhitelistedNFT(_newNftAddress);
