@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
@@ -30,16 +32,24 @@ contract SoulFund is
     /*** STORAGE ***/
     CountersUpgradeable.Counter private _tokenIdCounter;
 
-    uint256 vestingDate;
+    uint256 public vestingDate;
 
-    //tokenId => nftAddress => isWhitelisted
+    //tokenId (soulfundId) => nftAddress => isWhitelisted
     mapping(uint256 => mapping(address => bool)) public whitelistedNfts;
 
-    //tokenId => nftAddress => isSpent
+    //tokenId (nftProofId) => nftAddress => isSpent
     mapping(uint256 => mapping(address => bool)) public nftIsSpent;
 
-    //beneficiaryAddress => fundsRemaining
-    mapping(address => uint256) public balances;
+    //tokenId (soulfundId) => fundsRemaining
+    //note: you can only have up to five different currencies
+    mapping(uint256 => Balances[5]) public balances;
+
+    //tokenId (soulfundId) => currency address => i where i -1 is the index in the balances array (1-based since 0 is null)
+    mapping(uint256 => mapping(address => uint256)) public currencyIndices;
+
+    //tokenId (soulfundId) => number of currencies in this fund right now
+    //number of currencies in this soulfund NFT (max is five)
+    mapping(uint256 => uint256) public numCurrencies;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() payable {
@@ -71,6 +81,36 @@ contract SoulFund is
         _unpause();
     }
 
+    function depositFund(uint256 soulFundId, address currency, uint256 amount) external override payable onlyRole(GRANTER_ROLE)  {
+
+        // require that currency exists or max has not been reached
+        require(currencyIndices[soulFundId][currency] > 0 && numCurrencies[soulFundId] < 5, "SoulFund.depositFund: max currency type reached.");
+
+        uint index = currencyIndices[soulFundId][currency];
+
+        // add currency if needed
+        if (index == 0) {
+            // increment numCurrencies
+            numCurrencies[soulFundId]++;
+            // set currency indices
+            currencyIndices[soulFundId][currency] = numCurrencies[soulFundId];
+            // add currency
+            index = currencyIndices[soulFundId][currency];
+            balances[soulFundId][index].token = currency;
+        }
+
+
+        // add fund
+        if (currency == address(0)) {
+            // treat as eth
+            require(msg.value == amount, "SoulFund.depositFund: amount mismatch.");
+        } else {
+            // treat as erc20
+            IERC20(currency).transfer(msg.sender, amount);
+        }
+        balances[soulFundId][index].balance += amount;
+    }
+
     function safeMint(address _to) public onlyRole(GRANTER_ROLE) {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
@@ -99,8 +139,6 @@ contract SoulFund is
     {
         return super.supportsInterface(_interfaceId);
     }
-
-    function addBeneficiary() external override {}
 
     function whitelistNft(address _newNftAddress, uint256 _tokenId)
         external
@@ -135,7 +173,7 @@ contract SoulFund is
         address beneficiary = ownerOf(_soulFundId);
 
         require(
-            IERC721Upgradeable(_nftAddress).ownerOf(_nftId) == beneficiary,
+            IERC721(_nftAddress).ownerOf(_nftId) == beneficiary,
             "SoulFund.claimFundsEarly: beneficiary does not own nft required to claim funds"
         );
         require(
@@ -147,7 +185,9 @@ contract SoulFund is
             "SoulFund.claimFundsEarly: Claim token NFT has already been spent"
         );
 
-        uint256 amountToTransfer = balances[beneficiary] / FIVE_PERCENT;
+        // TODO: loop over balances array and transfer each (eth or erc20)
+        // uint256 amountToTransfer = balances[_soulFundId] / FIVE_PERCENT;
+        uint256 amountToTransfer = 10; // dummy
 
         //spend nft
         nftIsSpent[_nftId][_nftAddress] = true;
@@ -173,7 +213,9 @@ contract SoulFund is
             "SoulFund.claimFundsEarly: fund does not exist"
         );
 
-        uint256 amountToTransfer = balances[beneficiary];
+        // TODO: loop over balances array and transfer each (eth or erc20)
+        // uint256 amountToTransfer = balances[_soulFundId];
+        uint256 amountToTransfer = 10; // dummy
 
         payable(beneficiary).transfer(amountToTransfer);
 
