@@ -20,6 +20,8 @@ contract SoulFundFactory is
 
     CountersUpgradeable.Counter private _fundCounter;
 
+    address dataAddress;
+    
     //fundId => fundAddress
     mapping(uint256 => address) public funds;
 
@@ -28,8 +30,9 @@ contract SoulFundFactory is
         _disableInitializers();
     }
 
-    function initialize() public initializer {
+    function initialize(address _data) public initializer {
         __Pausable_init();
+        dataAddress = _data;
     }
 
     function pause() public onlyRole(PAUSER_ROLE) {
@@ -61,7 +64,7 @@ contract SoulFundFactory is
         _fundCounter.increment();
 
         SoulFund soulFund = new SoulFund{value: msg.value}();
-        soulFund.initialize(_beneficiary, _vestingDate);
+        soulFund.initialize(_beneficiary, _vestingDate, dataAddress);
         funds[_fundCounter.current()] = address(soulFund);
 
         emit NewSoulFundTokenDeployed(

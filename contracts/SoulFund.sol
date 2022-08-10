@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
@@ -9,6 +11,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 
 import "./interfaces/ISoulFund.sol";
+import "./interfaces/ITokenRenderer.sol";
 
 contract SoulFund is
     ISoulFund,
@@ -30,23 +33,32 @@ contract SoulFund is
     /*** STORAGE ***/
     CountersUpgradeable.Counter private _tokenIdCounter;
 
-    uint256 vestingDate;
+    uint256 public vestingDate;
 
-    //tokenId => nftAddress => isWhitelisted
+    //tokenId (soulfundId) => nftAddress => isWhitelisted
     mapping(uint256 => mapping(address => bool)) public whitelistedNfts;
 
-    //tokenId => nftAddress => isSpent
+    //tokenId (nftProofId) => nftAddress => isSpent
     mapping(uint256 => mapping(address => bool)) public nftIsSpent;
 
-    //beneficiaryAddress => fundsRemaining
-    mapping(address => uint256) public balances;
+    //tokenId (soulfundId) => fundsRemaining
+    //note: you can only have up to five different currencies
+    mapping(uint256 => Balances[5]) public balances;
 
+    //tokenId (soulfundId) => currency address => i where i -1 is the index in the balances array (1-based since 0 is null)
+    mapping(uint256 => mapping(address => uint256)) public currencyIndices;
+
+    //tokenId (soulfundId) => number of currencies in this fund right now
+    //number of currencies in this soulfund NFT (max is five)
+    mapping(uint256 => uint256) public numCurrencies;
+
+    ITokenRenderer renderer;
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() payable {
         _disableInitializers();
     }
 
-    function initialize(address _beneficiary, uint256 _vestingDate)
+    function initialize(address _beneficiary, uint256 _vestingDate, address _data)
         public
         payable
         initializer
@@ -57,10 +69,11 @@ contract SoulFund is
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(PAUSER_ROLE, msg.sender);
-        _grantRole(GRANTER_ROLE, _msgSender());
+        _grantRole(GRANTER_ROLE, msg.sender);
         _grantRole(BENEFICIARY_ROLE, _beneficiary);
 
         vestingDate = _vestingDate;
+        renderer = ITokenRenderer(_data);
     }
 
     function pause() public onlyRole(PAUSER_ROLE) {
@@ -69,6 +82,39 @@ contract SoulFund is
 
     function unpause() public onlyRole(PAUSER_ROLE) {
         _unpause();
+    }
+
+    function depositFund(uint256 soulFundId, address currency, uint256 amount) external override payable onlyRole(GRANTER_ROLE)  {
+
+        // require that currency exists or max has not been reached
+        require(currencyIndices[soulFundId][currency] >= 0 && numCurrencies[soulFundId] < 5, "SoulFund.depositFund: max currency type reached.");
+
+        uint index = currencyIndices[soulFundId][currency];
+
+        // add currency if needed
+        if (index == 0) {
+            // increment numCurrencies
+            numCurrencies[soulFundId]++;
+            // set currency indices
+            currencyIndices[soulFundId][currency] = numCurrencies[soulFundId];
+            // add currency
+            index = currencyIndices[soulFundId][currency];
+            balances[soulFundId][index].token = currency;
+        }
+
+
+        // add fund
+        if (currency == address(0)) {
+            // treat as eth
+            require(msg.value == amount, "SoulFund.depositFund: amount mismatch.");
+        } else {
+            // treat as erc20
+            IERC20(currency).transferFrom(msg.sender, address(this), amount);
+        }
+        balances[soulFundId][index].balance += amount;
+
+        emit FundDeposited(soulFundId, currency, amount, ownerOf(soulFundId));
+
     }
 
     function safeMint(address _to) public onlyRole(GRANTER_ROLE) {
@@ -99,8 +145,6 @@ contract SoulFund is
     {
         return super.supportsInterface(_interfaceId);
     }
-
-    function addBeneficiary() external override {}
 
     function whitelistNft(address _newNftAddress, uint256 _tokenId)
         external
@@ -135,7 +179,7 @@ contract SoulFund is
         address beneficiary = ownerOf(_soulFundId);
 
         require(
-            IERC721Upgradeable(_nftAddress).ownerOf(_nftId) == beneficiary,
+            IERC721(_nftAddress).ownerOf(_nftId) == beneficiary,
             "SoulFund.claimFundsEarly: beneficiary does not own nft required to claim funds"
         );
         require(
@@ -147,16 +191,19 @@ contract SoulFund is
             "SoulFund.claimFundsEarly: Claim token NFT has already been spent"
         );
 
-        uint256 amountToTransfer = balances[beneficiary] / FIVE_PERCENT;
+        _transferAllFunds(_soulFundId, FIVE_PERCENT);
+
+        // TODO replace dummy aggregatedAmount with computed aggregation result
+        uint256 aggregatedAmount = 1;
 
         //spend nft
         nftIsSpent[_nftId][_nftAddress] = true;
 
-        payable(beneficiary).transfer(amountToTransfer);
+        payable(beneficiary).transfer(aggregatedAmount);
 
         emit VestedFundsClaimedEarly(
             _soulFundId,
-            amountToTransfer,
+            aggregatedAmount,
             _nftAddress,
             _nftId
         );
@@ -167,16 +214,41 @@ contract SoulFund is
         payable
         override
     {
-        address beneficiary = ownerOf(_soulFundId);
         require(
             ownerOf(_soulFundId) != address(0),
             "SoulFund.claimFundsEarly: fund does not exist"
         );
 
-        uint256 amountToTransfer = balances[beneficiary];
+        _transferAllFunds(_soulFundId, 1);
 
-        payable(beneficiary).transfer(amountToTransfer);
+        // TODO replace dummy aggregatedAmount with computed aggregation result
+        uint256 aggregatedAmount = 1;
 
-        emit VestedFundClaimed(_soulFundId, amountToTransfer);
+        emit VestedFundClaimed(_soulFundId, aggregatedAmount);
     }
+
+    function _transferAllFunds(uint256 _soulFundId, uint256 percentage) internal {
+        // loop through all currencies
+        for (uint i = 0 ; i < numCurrencies[_soulFundId]; i++) {
+            address currency = balances[_soulFundId][i].token;
+            uint256 amount = balances[_soulFundId][i].balance / percentage;
+            if (currency == address(0)) {
+                // eth
+                payable(ownerOf(_soulFundId)).transfer(amount);
+            } else {
+                // erc20
+                IERC20(currency).transfer(ownerOf(_soulFundId), amount);
+            }
+        }
+    }
+
+    function balancesExt(uint256 _tokenId) external view returns (Balances[5] memory) {
+        return balances[_tokenId];
+    }
+
+     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+        require(_exists(tokenId), "Token does not exist");
+
+        return renderer.renderToken(address(this), tokenId);
+     }
 }

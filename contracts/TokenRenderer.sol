@@ -41,9 +41,10 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
     // generate svg
     // will work more on svg display in am
     function _svg(
-        ISoulFund.Balances[] memory _balances,
+        ISoulFund.Balances[5] memory _balances,
         uint256 _totalUSD,
-        uint256[] memory _percentages
+        uint256[] memory _percentages,
+        uint256 vestedDate
     ) internal view returns (string memory) {
         string memory svg;
         string memory pie;
@@ -60,13 +61,13 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
             svg = string(
                 abi.encodePacked(
                     svg,
-                    '<svg width="10px" height="5px" x="',
-                    SoulFundLibrary.toString(10 * i),
+                    '<svg width="8px" height="5px" x="',
+                    SoulFundLibrary.toString(8 * i),
                     '" y="30">',
                     '<rect style="fill:',
                     color,
-                    '" x="25%" y="4" />',
-                    '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size:2px;fill: #fff;">',
+                    '" x="20%" y="4" />',
+                    '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size:2px;fill: #000;">',
                     name,
                     "</text></svg>"
                 )
@@ -91,7 +92,7 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
             abi.encodePacked(
                 '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="main" viewBox="0 0 40 40" preserveAspectRatio="xMinYMin meet" shape-rendering="crisp-edges">',
                 '<svg width="40px" height="5px" x="0" y="3">',
-                '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size:3px;fill: #fff;">$',
+                '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size:3px;fill: #000;">$',
                 SoulFundLibrary.getDecimalString(_totalUSD),
                 "</text></svg>",
                 '<svg id="pie" x="10" y="10" height="20" width="20" viewBox="0 0 20 20">',
@@ -100,10 +101,11 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
                 "</svg>",
                 svg,
                 '<svg width="40px" height="5px" x="0" y="36">',
-                '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size:2px;fill: #fff;">'
-                "100 Minutes Until Next Vest",
+                '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size:2px;fill: #000;">',
+                SoulFundLibrary.toString(vestedDate),
+                " Minutes Until Next Vest",
                 "</text></svg>",
-                "<style>#main{background:#000}rect{width:5px;height:1px;}</style></svg>"
+                "<style>text{font-family:Arial;}rect{width:5px;height:1px;}</style></svg>"
             )
         );
 
@@ -112,7 +114,7 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
     }
 
     // generate metadata
-    function _meta(ISoulFund.Balances[] memory _balances)
+    function _meta(ISoulFund.Balances[5] memory _balances)
         internal
         view
         returns (
@@ -186,18 +188,26 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
         view
         returns (string memory)
     {
-        ISoulFund.Balances[] memory balances = ISoulFund(_soulfund).balances(
+        ISoulFund.Balances[5] memory balances = ISoulFund(_soulfund).balancesExt(
             _tokenId
         );
         string memory metadata;
         uint256 totalUSD;
         uint256[] memory percentages;
+        
+        uint256 vestedDate = ISoulFund(_soulfund).vestingDate();
+        if(block.timestamp >= vestedDate){
+            vestedDate = 0;
+        }
+        else{
+            vestedDate = (vestedDate - block.timestamp) / 60;
+        }
 
         // pull metadata as well metadata used for svg generation
         (metadata, totalUSD, percentages) = _meta(balances);
 
         // generate svg
-        string memory svg = _svg(balances, totalUSD, percentages);
+        string memory svg = _svg(balances, totalUSD, percentages, vestedDate);
 
         // return a base64 encoded json to render
         return
