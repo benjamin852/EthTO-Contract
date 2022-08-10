@@ -22,7 +22,7 @@
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "tokenId",
+          "name": "soulFundId",
           "type": "uint256"
         },
         {
@@ -32,14 +32,51 @@
           "type": "uint256"
         }
       ],
-      "name": "VestedFundClaimedEarly",
+      "name": "VestedFundClaimed",
       "type": "event"
     },
     {
-      "inputs": [],
-      "name": "addBeneficiary",
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "rewardAmount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "nftAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "nftTokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "VestedFundsClaimedEarly",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_soulFundId",
+          "type": "uint256"
+        }
+      ],
+      "name": "claimAllVestedFunds",
       "outputs": [],
-      "stateMutability": "nonpayable",
+      "stateMutability": "payable",
       "type": "function"
     },
     {
@@ -61,6 +98,29 @@
         }
       ],
       "name": "claimFundsEarly",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "soulFundId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "currency",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "depositFund",
       "outputs": [],
       "stateMutability": "payable",
       "type": "function"
