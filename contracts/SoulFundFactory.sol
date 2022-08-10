@@ -68,7 +68,7 @@ contract SoulFundFactory is
         funds[_fundCounter.current()] = address(soulFund);
 
         emit NewSoulFundTokenDeployed(
-            address(this),
+            address(soulFund),
             _beneficiary,
             _vestingDate,
             msg.value
