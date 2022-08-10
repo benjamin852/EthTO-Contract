@@ -20,6 +20,11 @@ interface ISoulFund {
 
     function depositFund(uint256 soulFundId, address currency, uint256 amount) external payable;
 
+    function balances(uint256 _tokenId)
+        external
+        view
+        returns (Balances[] memory);
+
     function whitelistNft(address _newNftAddress, uint256 _tokenId) external;
 
     function claimFundsEarly(
