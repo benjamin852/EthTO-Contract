@@ -1,5 +1,7 @@
 require("@nomicfoundation/hardhat-toolbox");
 require('@openzeppelin/hardhat-upgrades');
+require('hardhat-contract-sizer');
+
 /** @type import('hardhat/config').HardhatUserConfig */
 require('dotenv').config();
 
@@ -7,6 +9,12 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 module.exports = {
   solidity: "0.8.9",
+  settings: {
+    optimizer: {
+      enabled: true,
+      runs: 900,
+    },
+  },
   networks: {
     testnet_moonbeam: {
       url: 'https://rpc.ankr.com/moonbeam	',
