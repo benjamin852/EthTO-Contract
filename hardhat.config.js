@@ -25,6 +25,18 @@ module.exports = {
       accounts: [`0x${AURORA_PRIVATE_KEY}`],
       chainId: 4,
       gasPrice: 30 * 1000000000
-    }
+    },
+    ropsten: {
+      url: 'https://rpc.ankr.com/eth_ropsten',
+      accounts: [`0x${AURORA_PRIVATE_KEY}`],
+      chainId: 3,
+      gasPrice: 30 * 1000000000
+    },
+    ropsten: {
+      url: 'https://rpc.ankr.com/polygon_mumbai',
+      accounts: [`0x${AURORA_PRIVATE_KEY}`],
+      chainId: 80001,
+      gasPrice: 30 * 1000000000
+    },
   }
 };
