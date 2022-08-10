@@ -19,9 +19,7 @@ interface ISoulFund {
 
     event VestedFundsClaimedEarly(
         uint256 tokenId,
-        uint256 rewardAmount,
-        address nftAddress,
-        uint256 nftTokenId
+        uint256 rewardAmount
     );
     event VestedFundClaimed(uint256 soulFundId, uint256 vestedAmount);
 

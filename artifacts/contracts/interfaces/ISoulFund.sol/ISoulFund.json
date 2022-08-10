@@ -80,18 +80,6 @@
           "internalType": "uint256",
           "name": "rewardAmount",
           "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "nftAddress",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "nftTokenId",
-          "type": "uint256"
         }
       ],
       "name": "VestedFundsClaimedEarly",

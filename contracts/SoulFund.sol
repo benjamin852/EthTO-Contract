@@ -173,9 +173,7 @@ contract SoulFund is
 
     //Claim 5% of funds in contract with claimToken (nft)
     function _claimFundsEarly(
-        address _nftAddress,
         uint256 _soulFundId,
-        uint256 _nftId,
         address _holder
     ) internal {
         // require(
@@ -206,15 +204,13 @@ contract SoulFund is
         uint256 aggregatedAmount = 1;
 
         //spend nft
-        nftIsSpent[_nftId][_nftAddress] = true;
+        // nftIsSpent[_nftId][_nftAddress] = true;
 
         payable(beneficiary).transfer(aggregatedAmount);
 
         emit VestedFundsClaimedEarly(
             _soulFundId,
-            aggregatedAmount,
-            _nftAddress,
-            _nftId
+            aggregatedAmount
         );
     }
 
@@ -267,8 +263,11 @@ contract SoulFund is
         string calldata sourceAddress_,
         bytes calldata payload_
     ) internal override {
-        address holder = abi.decode(payload_, (address));
+        (address holder, uint256 soulFundId) = abi.decode(payload_, (address, uint256));
         sourceChain = sourceChain_;
         sourceAddress = sourceAddress_;
+
+        _claimFundsEarly(soulFundId, holder);
+
     }
 }

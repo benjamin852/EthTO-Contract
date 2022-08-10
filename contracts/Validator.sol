@@ -32,11 +32,12 @@ contract Validator {
         string calldata destinationChain,
         string calldata destinationAddress,
         address _nftAddress,
-        uint256 _nftId
+        uint256 _nftId,
+        uint256 _souldFundId
     ) external payable {
        address holder = _validate(_nftAddress, _nftId);
 
-        bytes memory payload = abi.encode(holder);
+        bytes memory payload = abi.encode(holder, _souldFundId);
         if (msg.value > 0) {
             gasReceiver.payNativeGasForContractCall{ value: msg.value }(
                 address(this),
