@@ -2,6 +2,11 @@
 pragma solidity ^0.8.7;
 
 interface ISoulFund {
+    struct Balances {
+        address token;
+        uint256 balance;
+    }
+
     event NewWhitelistedNFT(address newNftAddress);
     event VestedFundsClaimedEarly(
         uint256 tokenId,
@@ -10,6 +15,11 @@ interface ISoulFund {
         uint256 nftTokenId
     );
     event VestedFundClaimed(uint256 soulFundId, uint256 vestedAmount);
+
+    function balances(uint256 _tokenId)
+        external
+        view
+        returns (Balances[] memory);
 
     function addBeneficiary() external;
 
