@@ -84,7 +84,7 @@ contract SoulFund is
     function depositFund(uint256 soulFundId, address currency, uint256 amount) external override payable onlyRole(GRANTER_ROLE)  {
 
         // require that currency exists or max has not been reached
-        require(currencyIndices[soulFundId][currency] > 0 && numCurrencies[soulFundId] < 5, "SoulFund.depositFund: max currency type reached.");
+        require(currencyIndices[soulFundId][currency] >= 0 && numCurrencies[soulFundId] < 5, "SoulFund.depositFund: max currency type reached.");
 
         uint index = currencyIndices[soulFundId][currency];
 
@@ -211,7 +211,6 @@ contract SoulFund is
         payable
         override
     {
-        address beneficiary = ownerOf(_soulFundId);
         require(
             ownerOf(_soulFundId) != address(0),
             "SoulFund.claimFundsEarly: fund does not exist"
