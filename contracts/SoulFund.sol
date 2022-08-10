@@ -109,7 +109,7 @@ contract SoulFund is
             require(msg.value == amount, "SoulFund.depositFund: amount mismatch.");
         } else {
             // treat as erc20
-            IERC20(currency).transfer(address(this), amount);
+            IERC20(currency).transferFrom(msg.sender, address(this), amount);
         }
         balances[soulFundId][index].balance += amount;
 

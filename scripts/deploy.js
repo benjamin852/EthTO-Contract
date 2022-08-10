@@ -21,14 +21,14 @@ async function main() {
     (await deployer.getBalance()).toString()
   );
 
-  // const erc20s = ["0x0000000000000000000000000000000000000000","0x5592EC0cfb4dbc12D3aB100b257153436a1f0FEa","0x7d66CDe53cc0A169cAE32712fC48934e610aeF14","0x01BE23585060835E02B77ef475b0Cc51aA1e0709"];
-  // const tokenNames = ["Eth","Dai","USDC","LINK"];
-  // const tokenColors = ["#bba3db","#d8dba3","#a3dbc5","a3d0db"];
-  // const aggregators = ["0x8A753747A1Fa494EC906cE90E9f37563A8AF630e","0x2bA49Aaa16E6afD2a993473cfB70Fa8559B523cF","0xa24de01df22b63d23Ebc1882a5E3d4ec0d907bFB","0xd8bD0a1cB028a31AA859A21A3758685a95dE4623"];
+  const erc20s = ["0x0000000000000000000000000000000000000000","0x5592EC0cfb4dbc12D3aB100b257153436a1f0FEa","0x7d66CDe53cc0A169cAE32712fC48934e610aeF14","0x01BE23585060835E02B77ef475b0Cc51aA1e0709"];
+  const tokenNames = ["Eth","Dai","USDC","LINK"];
+  const tokenColors = ["#bba3db","#d8dba3","#a3dbc5","#a3d0db"];
+  const aggregators = ["0x8A753747A1Fa494EC906cE90E9f37563A8AF630e","0x2bA49Aaa16E6afD2a993473cfB70Fa8559B523cF","0xa24de01df22b63d23Ebc1882a5E3d4ec0d907bFB","0xd8bD0a1cB028a31AA859A21A3758685a95dE4623"];
     
-  // const TokenRenderer = await ethers.getContractFactory("TokenRenderer");
-  // const tokenrenderer = await upgrades.deployProxy(TokenRenderer, [erc20s,tokenNames,tokenColors,aggregators]);
-  // await tokenrenderer.deployed();
+  const TokenRenderer = await ethers.getContractFactory("TokenRenderer");
+  const tokenrenderer = await upgrades.deployProxy(TokenRenderer, [erc20s,tokenNames,tokenColors,aggregators]);
+  await tokenrenderer.deployed();
 
   // console.log(
   //   "TokenRenderer address:",
