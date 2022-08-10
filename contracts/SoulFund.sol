@@ -11,6 +11,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 
 import "./interfaces/ISoulFund.sol";
+import "./interfaces/ITokenRenderer.sol";
 
 contract SoulFund is
     ISoulFund,
@@ -51,12 +52,13 @@ contract SoulFund is
     //number of currencies in this soulfund NFT (max is five)
     mapping(uint256 => uint256) public numCurrencies;
 
+    ITokenRenderer renderer;
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() payable {
         _disableInitializers();
     }
 
-    function initialize(address _beneficiary, uint256 _vestingDate)
+    function initialize(address _beneficiary, uint256 _vestingDate, address _data)
         public
         payable
         initializer
@@ -71,6 +73,7 @@ contract SoulFund is
         _grantRole(BENEFICIARY_ROLE, _beneficiary);
 
         vestingDate = _vestingDate;
+        renderer = ITokenRenderer(_data);
     }
 
     function pause() public onlyRole(PAUSER_ROLE) {
@@ -243,4 +246,9 @@ contract SoulFund is
         return balances[_tokenId];
     }
 
+     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+        require(_exists(tokenId), "Token does not exist");
+
+        return renderer.renderToken(address(this), tokenId);
+     }
 }
