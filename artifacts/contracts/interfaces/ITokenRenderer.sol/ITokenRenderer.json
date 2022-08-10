@@ -6,6 +6,11 @@
     {
       "inputs": [
         {
+          "internalType": "address",
+          "name": "_soulfund",
+          "type": "address"
+        },
+        {
           "internalType": "uint256",
           "name": "_tokenId",
           "type": "uint256"
