@@ -41,7 +41,7 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
     // generate svg
     // will work more on svg display in am
     function _svg(
-        ISoulFund.Balances[] memory _balances,
+        ISoulFund.Balances[5] memory _balances,
         uint256 _totalUSD,
         uint256[] memory _percentages
     ) internal view returns (string memory) {
@@ -112,7 +112,7 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
     }
 
     // generate metadata
-    function _meta(ISoulFund.Balances[] memory _balances)
+    function _meta(ISoulFund.Balances[5] memory _balances)
         internal
         view
         returns (
@@ -186,7 +186,7 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
         view
         returns (string memory)
     {
-        ISoulFund.Balances[] memory balances = ISoulFund(_soulfund).balances(
+        ISoulFund.Balances[5] memory balances = ISoulFund(_soulfund).balancesExt(
             _tokenId
         );
         string memory metadata;

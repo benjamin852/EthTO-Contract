@@ -109,6 +109,9 @@ contract SoulFund is
             IERC20(currency).transfer(msg.sender, amount);
         }
         balances[soulFundId][index].balance += amount;
+
+        emit FundDeposited(soulFundId, currency, amount, ownerOf(soulFundId));
+
     }
 
     function safeMint(address _to) public onlyRole(GRANTER_ROLE) {
@@ -185,18 +188,19 @@ contract SoulFund is
             "SoulFund.claimFundsEarly: Claim token NFT has already been spent"
         );
 
-        // TODO: loop over balances array and transfer each (eth or erc20)
-        // uint256 amountToTransfer = balances[_soulFundId] / FIVE_PERCENT;
-        uint256 amountToTransfer = 10; // dummy
+        _transferAllFunds(_soulFundId, FIVE_PERCENT);
+
+        // TODO replace dummy aggregatedAmount with computed aggregation result
+        uint256 aggregatedAmount = 1;
 
         //spend nft
         nftIsSpent[_nftId][_nftAddress] = true;
 
-        payable(beneficiary).transfer(amountToTransfer);
+        payable(beneficiary).transfer(aggregatedAmount);
 
         emit VestedFundsClaimedEarly(
             _soulFundId,
-            amountToTransfer,
+            aggregatedAmount,
             _nftAddress,
             _nftId
         );
@@ -213,12 +217,31 @@ contract SoulFund is
             "SoulFund.claimFundsEarly: fund does not exist"
         );
 
-        // TODO: loop over balances array and transfer each (eth or erc20)
-        // uint256 amountToTransfer = balances[_soulFundId];
-        uint256 amountToTransfer = 10; // dummy
+        _transferAllFunds(_soulFundId, 1);
 
-        payable(beneficiary).transfer(amountToTransfer);
+        // TODO replace dummy aggregatedAmount with computed aggregation result
+        uint256 aggregatedAmount = 1;
 
-        emit VestedFundClaimed(_soulFundId, amountToTransfer);
+        emit VestedFundClaimed(_soulFundId, aggregatedAmount);
     }
+
+    function _transferAllFunds(uint256 _soulFundId, uint256 percentage) internal {
+        // loop through all currencies
+        for (uint i = 0 ; i < numCurrencies[_soulFundId]; i++) {
+            address currency = balances[_soulFundId][i].token;
+            uint256 amount = balances[_soulFundId][i].balance / percentage;
+            if (currency == address(0)) {
+                // eth
+                payable(ownerOf(_soulFundId)).transfer(amount);
+            } else {
+                // erc20
+                IERC20(currency).transfer(ownerOf(_soulFundId), amount);
+            }
+        }
+    }
+
+    function balancesExt(uint256 _tokenId) external view returns (Balances[5] memory) {
+        return balances[_tokenId];
+    }
+
 }
