@@ -46,6 +46,7 @@ contract SoulFund is
     mapping(uint256 => Balances[5]) public balances;
 
     //tokenId (soulfundId) => currency address => i where i -1 is the index in the balances array (1-based since 0 is null)
+    //soulFund => erc20Address=> indexedTokenId
     mapping(uint256 => mapping(address => uint256)) public currencyIndices;
 
     //tokenId (soulfundId) => number of currencies in this fund right now
@@ -53,16 +54,17 @@ contract SoulFund is
     mapping(uint256 => uint256) public numCurrencies;
 
     ITokenRenderer renderer;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() payable {
         _disableInitializers();
     }
 
-    function initialize(address _beneficiary, uint256 _vestingDate, address _data)
-        public
-        payable
-        initializer
-    {
+    function initialize(
+        address _beneficiary,
+        uint256 _vestingDate,
+        address _data
+    ) public payable initializer {
         __ERC721_init("SoulFund", "SLF");
         __Pausable_init();
         __AccessControl_init();
@@ -84,12 +86,19 @@ contract SoulFund is
         _unpause();
     }
 
-    function depositFund(uint256 soulFundId, address currency, uint256 amount) external override payable onlyRole(GRANTER_ROLE)  {
-
+    function depositFund(
+        uint256 soulFundId,
+        address currency,
+        uint256 amount
+    ) external payable override onlyRole(GRANTER_ROLE) {
         // require that currency exists or max has not been reached
-        require(currencyIndices[soulFundId][currency] >= 0 && numCurrencies[soulFundId] < 5, "SoulFund.depositFund: max currency type reached.");
+        require(
+            currencyIndices[soulFundId][currency] >= 0 &&
+                numCurrencies[soulFundId] < 5,
+            "SoulFund.depositFund: max currency type reached."
+        );
 
-        uint index = currencyIndices[soulFundId][currency];
+        uint256 index = currencyIndices[soulFundId][currency];
 
         // add currency if needed
         if (index == 0) {
@@ -102,11 +111,13 @@ contract SoulFund is
             balances[soulFundId][index].token = currency;
         }
 
-
         // add fund
         if (currency == address(0)) {
             // treat as eth
-            require(msg.value == amount, "SoulFund.depositFund: amount mismatch.");
+            require(
+                msg.value == amount,
+                "SoulFund.depositFund: amount mismatch."
+            );
         } else {
             // treat as erc20
             IERC20(currency).transferFrom(msg.sender, address(this), amount);
@@ -114,7 +125,6 @@ contract SoulFund is
         balances[soulFundId][index].balance += amount;
 
         emit FundDeposited(soulFundId, currency, amount, ownerOf(soulFundId));
-
     }
 
     function safeMint(address _to) public onlyRole(GRANTER_ROLE) {
@@ -227,9 +237,11 @@ contract SoulFund is
         emit VestedFundClaimed(_soulFundId, aggregatedAmount);
     }
 
-    function _transferAllFunds(uint256 _soulFundId, uint256 percentage) internal {
+    function _transferAllFunds(uint256 _soulFundId, uint256 percentage)
+        internal
+    {
         // loop through all currencies
-        for (uint i = 0 ; i < numCurrencies[_soulFundId]; i++) {
+        for (uint256 i = 0; i < numCurrencies[_soulFundId]; i++) {
             address currency = balances[_soulFundId][i].token;
             uint256 amount = balances[_soulFundId][i].balance / percentage;
             if (currency == address(0)) {
@@ -242,13 +254,23 @@ contract SoulFund is
         }
     }
 
-    function balancesExt(uint256 _tokenId) external view returns (Balances[5] memory) {
+    function balancesExt(uint256 _tokenId)
+        external
+        view
+        returns (Balances[5] memory)
+    {
         return balances[_tokenId];
     }
 
-     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        virtual
+        override
+        returns (string memory)
+    {
         require(_exists(tokenId), "Token does not exist");
 
         return renderer.renderToken(address(this), tokenId);
-     }
+    }
 }
