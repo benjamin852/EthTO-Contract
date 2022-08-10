@@ -36,13 +36,13 @@ interface ISoulFund {
         view
         returns (Balances[5] memory);
 
-    function whitelistNft(address _newNftAddress, uint256 _tokenId) external;
+    // function whitelistNft(address _newNftAddress, uint256 _tokenId) external;
 
-    function claimFundsEarly(
-        address _nftAddress,
-        uint256 _soulFundId,
-        uint256 _nftId
-    ) external payable;
+    // function claimFundsEarly(
+    //     address _nftAddress,
+    //     uint256 _soulFundId,
+    //     uint256 _nftId
+    // ) external payable;
 
     function claimAllVestedFunds(uint256 _soulFundId) external payable;
 

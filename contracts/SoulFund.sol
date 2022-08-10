@@ -3,25 +3,27 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+import { AxelarExecutable } from '@axelar-network/axelar-utils-solidity/contracts/executables/AxelarExecutable.sol';
+import { IAxelarGateway } from '@axelar-network/axelar-utils-solidity/contracts/interfaces/IAxelarGateway.sol';
+import { IAxelarGasService } from '@axelar-network/axelar-cgp-solidity/contracts/interfaces/IAxelarGasService.sol';
 
 import "./interfaces/ISoulFund.sol";
 import "./interfaces/ITokenRenderer.sol";
 
 contract SoulFund is
     ISoulFund,
-    Initializable,
-    ERC721Upgradeable,
-    PausableUpgradeable,
-    AccessControlUpgradeable
+    ERC721,
+    Pausable,
+    AccessControl,
+    AxelarExecutable
 {
     /*** LIBRARIES ***/
-    using CountersUpgradeable for CountersUpgradeable.Counter;
+    using Counters for Counters.Counter;
 
     /*** CONSTANTS ***/
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
@@ -31,7 +33,11 @@ contract SoulFund is
     uint256 public constant FIVE_PERCENT = 500;
 
     /*** STORAGE ***/
-    CountersUpgradeable.Counter private _tokenIdCounter;
+     string public sourceChain;
+    string public sourceAddress;
+    IAxelarGasService public immutable gasReceiver;
+    IAxelarGateway immutable _gateway;
+    Counters.Counter private _tokenIdCounter;
 
     uint256 public vestingDate;
 
@@ -53,19 +59,12 @@ contract SoulFund is
     mapping(uint256 => uint256) public numCurrencies;
 
     ITokenRenderer renderer;
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() payable {
-        _disableInitializers();
-    }
 
-    function initialize(address _beneficiary, uint256 _vestingDate, address _data)
-        public
+
+    constructor(address _beneficiary, uint256 _vestingDate, address _data, address gateway_, address gasReceiver_) ERC721("SoulFund", "SLF")
         payable
-        initializer
     {
-        __ERC721_init("SoulFund", "SLF");
-        __Pausable_init();
-        __AccessControl_init();
+        // __ERC721_init("SoulFund", "SLF");
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(PAUSER_ROLE, msg.sender);
@@ -74,6 +73,9 @@ contract SoulFund is
 
         vestingDate = _vestingDate;
         renderer = ITokenRenderer(_data);
+
+        gasReceiver = IAxelarGasService(gasReceiver_);
+        _gateway = IAxelarGateway(gateway_);
     }
 
     function pause() public onlyRole(PAUSER_ROLE) {
@@ -140,56 +142,63 @@ contract SoulFund is
     function supportsInterface(bytes4 _interfaceId)
         public
         view
-        override(ERC721Upgradeable, AccessControlUpgradeable)
+        override(ERC721, AccessControl)
         returns (bool)
     {
         return super.supportsInterface(_interfaceId);
     }
 
-    function whitelistNft(address _newNftAddress, uint256 _tokenId)
-        external
-        override
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        require(
-            whitelistedNfts[_tokenId][_newNftAddress] == false,
-            "SoulFund.whitelistNft: address already added"
-        );
-        require(
-            _newNftAddress != address(0),
-            "SoulFund.whitelistNft: cannot add 0 address"
-        );
-
-        whitelistedNfts[_tokenId][_newNftAddress] = true;
-
-        emit NewWhitelistedNFT(_newNftAddress);
+    function gateway() public view override returns (IAxelarGateway) {
+        return _gateway;
     }
 
+    // function whitelistNft(address _newNftAddress, uint256 _tokenId)
+    //     external
+    //     override
+    //     onlyRole(DEFAULT_ADMIN_ROLE)
+    // {
+    //     require(
+    //         whitelistedNfts[_tokenId][_newNftAddress] == false,
+    //         "SoulFund.whitelistNft: address already added"
+    //     );
+    //     require(
+    //         _newNftAddress != address(0),
+    //         "SoulFund.whitelistNft: cannot add 0 address"
+    //     );
+
+    //     whitelistedNfts[_tokenId][_newNftAddress] = true;
+
+    //     emit NewWhitelistedNFT(_newNftAddress);
+    // }
+
     //Claim 5% of funds in contract with claimToken (nft)
-    function claimFundsEarly(
+    function _claimFundsEarly(
         address _nftAddress,
         uint256 _soulFundId,
-        uint256 _nftId
-    ) external payable override {
-        require(
-            whitelistedNfts[_soulFundId][_nftAddress],
-            "SoulFund.claimFundsEarly: NFT not whitelisted"
-        );
+        uint256 _nftId,
+        address _holder
+    ) internal {
+        // require(
+        //     whitelistedNfts[_soulFundId][_nftAddress],
+        //     "SoulFund.claimFundsEarly: NFT not whitelisted"
+        // );
 
         address beneficiary = ownerOf(_soulFundId);
+        require(_holder == beneficiary, "SoulFund.claimFundsEarly: invalid address");
 
-        require(
-            IERC721(_nftAddress).ownerOf(_nftId) == beneficiary,
-            "SoulFund.claimFundsEarly: beneficiary does not own nft required to claim funds"
-        );
-        require(
-            ownerOf(_soulFundId) != address(0),
-            "SoulFund.claimFundsEarly: fund does not exist"
-        );
-        require(
-            !nftIsSpent[_nftId][_nftAddress],
-            "SoulFund.claimFundsEarly: Claim token NFT has already been spent"
-        );
+        // require(
+        //     IERC721(_nftAddress).ownerOf(_nftId) == beneficiary,
+        //     "SoulFund.claimFundsEarly: beneficiary does not own nft required to claim funds"
+        // );
+        // require(
+        //     ownerOf(_soulFundId) != address(0),
+        //     "SoulFund.claimFundsEarly: fund does not exist"
+        // );
+        // require(
+        //     !nftIsSpent[_nftId][_nftAddress],
+        //     "SoulFund.claimFundsEarly: Claim token NFT has already been spent"
+        // );
+        
 
         _transferAllFunds(_soulFundId, FIVE_PERCENT);
 
@@ -251,4 +260,15 @@ contract SoulFund is
 
         return renderer.renderToken(address(this), tokenId);
      }
+
+     // Handles calls created by setAndSend. Updates this contract's value
+    function _execute(
+        string calldata sourceChain_,
+        string calldata sourceAddress_,
+        bytes calldata payload_
+    ) internal override {
+        address holder = abi.decode(payload_, (address));
+        sourceChain = sourceChain_;
+        sourceAddress = sourceAddress_;
+    }
 }
