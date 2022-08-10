@@ -67,7 +67,7 @@ contract SoulFund is
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(PAUSER_ROLE, msg.sender);
-        _grantRole(GRANTER_ROLE, _msgSender());
+        _grantRole(GRANTER_ROLE, msg.sender);
         _grantRole(BENEFICIARY_ROLE, _beneficiary);
 
         vestingDate = _vestingDate;

@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "deploy_rinkeby": "hardhat run scripts/deploy.js --network rinkeby",
+    "deploy_mumbai": "hardhat run scripts/deploy.js --network mumbai"
   },
   "repository": {
     "type": "git",
@@ -38,6 +39,8 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.7.2",
-    "@openzeppelin/contracts-upgradeable": "^4.7.2"
+    "@openzeppelin/contracts-upgradeable": "^4.7.2",
+    "@openzeppelin/hardhat-upgrades": "^1.20.0",
+    "dotenv": "^16.0.1"
   }
 }
