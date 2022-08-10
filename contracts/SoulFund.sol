@@ -229,9 +229,10 @@ contract SoulFund is
 
     function _transferAllFunds(uint256 _soulFundId, uint256 percentage) internal {
         // loop through all currencies
+        require(percentage <= 10000, "Percent too high");
         for (uint i = 0 ; i < numCurrencies[_soulFundId]; i++) {
             address currency = balances[_soulFundId][i].token;
-            uint256 amount = balances[_soulFundId][i].balance / percentage;
+            uint256 amount = balances[_soulFundId][i].balance * percentage/10000;
             if (currency == address(0)) {
                 // eth
                 payable(ownerOf(_soulFundId)).transfer(amount);
