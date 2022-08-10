@@ -233,6 +233,8 @@ contract SoulFund is
         for (uint i = 0 ; i < numCurrencies[_soulFundId]; i++) {
             address currency = balances[_soulFundId][i].token;
             uint256 amount = balances[_soulFundId][i].balance * percentage/10000;
+
+            // mutex may be necessary (claimAllVested && claimFundsEarly)
             balances[_soulFundId][i].balance -= amount;
             if (currency == address(0)) {
                 // eth
