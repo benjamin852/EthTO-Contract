@@ -46,4 +46,5 @@ interface ISoulFund {
 
     function claimAllVestedFunds(uint256 _soulFundId) external payable;
 
+    //function vestingDate() external view returns(uint256);
 }
