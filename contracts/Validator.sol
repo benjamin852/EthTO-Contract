@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.9;
-import { IAxelarGateway } from '@axelar-network/axelar-utils-solidity/contracts/interfaces/IAxelarGateway.sol';
-import { IAxelarGasService } from '@axelar-network/axelar-cgp-solidity/contracts/interfaces/IAxelarGasService.sol';
+pragma solidity ^0.8.9;
+import {IAxelarGateway} from "@axelar-network/axelar-utils-solidity/contracts/interfaces/IAxelarGateway.sol";
+import {IAxelarGasService} from "@axelar-network/axelar-cgp-solidity/contracts/interfaces/IAxelarGasService.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 
 contract Validator {
@@ -18,7 +18,7 @@ contract Validator {
     // nftAddress => isSpent
     mapping(address => bool) public nftIsSpent;
 
-    constructor(address gateway_, address gasReceiver_, address _beneficiary){
+    constructor(address gateway_, address gasReceiver_) {
         gasReceiver = IAxelarGasService(gasReceiver_);
         _gateway = IAxelarGateway(gateway_);
     }
@@ -35,11 +35,11 @@ contract Validator {
         uint256 _nftId,
         uint256 _souldFundId
     ) external payable {
-       address holder = _validate(_nftAddress, _nftId);
+        address holder = _validate(_nftAddress, _nftId);
 
         bytes memory payload = abi.encode(holder, _souldFundId);
         if (msg.value > 0) {
-            gasReceiver.payNativeGasForContractCall{ value: msg.value }(
+            gasReceiver.payNativeGasForContractCall{value: msg.value}(
                 address(this),
                 destinationChain,
                 destinationAddress,
@@ -50,9 +50,7 @@ contract Validator {
         gateway().callContract(destinationChain, destinationAddress, payload);
     }
 
-     function whitelistNft(address _newNftAddress)
-        external
-    {
+    function whitelistNft(address _newNftAddress) external {
         require(
             whitelistedNfts[_newNftAddress] == false,
             "validator.whitelistNft: address already added"
@@ -67,15 +65,15 @@ contract Validator {
         emit NewWhitelistedNFT(_newNftAddress);
     }
 
-    function _validate(
-        address _nftAddress,
-        uint256 _nftId
-    ) internal returns(address) {
+    function _validate(address _nftAddress, uint256 _nftId)
+        internal
+        returns (address)
+    {
         require(
             whitelistedNfts[_nftAddress],
             "SoulFund.claimFundsEarly: NFT not whitelisted"
         );
-      
+
         require(
             !nftIsSpent[_nftAddress],
             "SoulFund.claimFundsEarly: Claim token NFT has already been spent"
@@ -83,5 +81,4 @@ contract Validator {
 
         return IERC721Upgradeable(_nftAddress).ownerOf(_nftId);
     }
-
 }

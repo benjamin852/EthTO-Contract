@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -8,9 +8,9 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import { AxelarExecutable } from '@axelar-network/axelar-utils-solidity/contracts/executables/AxelarExecutable.sol';
-import { IAxelarGateway } from '@axelar-network/axelar-utils-solidity/contracts/interfaces/IAxelarGateway.sol';
-import { IAxelarGasService } from '@axelar-network/axelar-cgp-solidity/contracts/interfaces/IAxelarGasService.sol';
+import {AxelarExecutable} from "@axelar-network/axelar-utils-solidity/contracts/executables/AxelarExecutable.sol";
+import {IAxelarGateway} from "@axelar-network/axelar-utils-solidity/contracts/interfaces/IAxelarGateway.sol";
+import {IAxelarGasService} from "@axelar-network/axelar-cgp-solidity/contracts/interfaces/IAxelarGasService.sol";
 
 import "./interfaces/ISoulFund.sol";
 import "./interfaces/ITokenRenderer.sol";
@@ -33,7 +33,7 @@ contract SoulFund is
     uint256 public constant FIVE_PERCENT = 500;
 
     /*** STORAGE ***/
-     string public sourceChain;
+    string public sourceChain;
     string public sourceAddress;
     IAxelarGasService public immutable gasReceiver;
     IAxelarGateway immutable _gateway;
@@ -60,10 +60,13 @@ contract SoulFund is
 
     ITokenRenderer renderer;
 
-
-    constructor(address _beneficiary, uint256 _vestingDate, address _data, address gateway_, address gasReceiver_) ERC721("SoulFund", "SLF")
-        payable
-    {
+    constructor(
+        address _beneficiary,
+        uint256 _vestingDate,
+        address _data,
+        address gateway_,
+        address gasReceiver_
+    ) payable ERC721("SoulFund", "SLF") {
         // __ERC721_init("SoulFund", "SLF");
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -86,12 +89,19 @@ contract SoulFund is
         _unpause();
     }
 
-    function depositFund(uint256 soulFundId, address currency, uint256 amount) external override payable onlyRole(GRANTER_ROLE)  {
-
+    function depositFund(
+        uint256 soulFundId,
+        address currency,
+        uint256 amount
+    ) external payable override onlyRole(GRANTER_ROLE) {
         // require that currency exists or max has not been reached
-        require(currencyIndices[soulFundId][currency] >= 0 && numCurrencies[soulFundId] < 5, "SoulFund.depositFund: max currency type reached.");
+        require(
+            currencyIndices[soulFundId][currency] >= 0 &&
+                numCurrencies[soulFundId] < 5,
+            "SoulFund.depositFund: max currency type reached."
+        );
 
-        uint index = currencyIndices[soulFundId][currency];
+        uint256 index = currencyIndices[soulFundId][currency];
 
         // add currency if needed
         if (index == 0) {
@@ -104,11 +114,13 @@ contract SoulFund is
             balances[soulFundId][index].token = currency;
         }
 
-
         // add fund
         if (currency == address(0)) {
             // treat as eth
-            require(msg.value == amount, "SoulFund.depositFund: amount mismatch.");
+            require(
+                msg.value == amount,
+                "SoulFund.depositFund: amount mismatch."
+            );
         } else {
             // treat as erc20
             IERC20(currency).transferFrom(msg.sender, address(this), amount);
@@ -116,7 +128,6 @@ contract SoulFund is
         balances[soulFundId][index].balance += amount;
 
         emit FundDeposited(soulFundId, currency, amount, ownerOf(soulFundId));
-
     }
 
     function safeMint(address _to) public onlyRole(GRANTER_ROLE) {
@@ -172,17 +183,17 @@ contract SoulFund is
     // }
 
     //Claim 5% of funds in contract with claimToken (nft)
-    function _claimFundsEarly(
-        uint256 _soulFundId,
-        address _holder
-    ) internal {
+    function _claimFundsEarly(uint256 _soulFundId, address _holder) internal {
         // require(
         //     whitelistedNfts[_soulFundId][_nftAddress],
         //     "SoulFund.claimFundsEarly: NFT not whitelisted"
         // );
 
         address beneficiary = ownerOf(_soulFundId);
-        require(_holder == beneficiary, "SoulFund.claimFundsEarly: invalid address");
+        require(
+            _holder == beneficiary,
+            "SoulFund.claimFundsEarly: invalid address"
+        );
 
         // require(
         //     IERC721(_nftAddress).ownerOf(_nftId) == beneficiary,
@@ -196,7 +207,6 @@ contract SoulFund is
         //     !nftIsSpent[_nftId][_nftAddress],
         //     "SoulFund.claimFundsEarly: Claim token NFT has already been spent"
         // );
-        
 
         _transferAllFunds(_soulFundId, FIVE_PERCENT);
 
@@ -208,10 +218,7 @@ contract SoulFund is
 
         payable(beneficiary).transfer(aggregatedAmount);
 
-        emit VestedFundsClaimedEarly(
-            _soulFundId,
-            aggregatedAmount
-        );
+        emit VestedFundsClaimedEarly(_soulFundId, aggregatedAmount);
     }
 
     function claimAllVestedFunds(uint256 _soulFundId)
@@ -232,11 +239,18 @@ contract SoulFund is
         emit VestedFundClaimed(_soulFundId, aggregatedAmount);
     }
 
-    function _transferAllFunds(uint256 _soulFundId, uint256 percentage) internal {
+    function _transferAllFunds(uint256 _soulFundId, uint256 percentage)
+        internal
+    {
         // loop through all currencies
-        for (uint i = 0 ; i < numCurrencies[_soulFundId]; i++) {
+        require(percentage <= 10000, "Percent too high");
+        for (uint256 i = 0; i < numCurrencies[_soulFundId]; i++) {
             address currency = balances[_soulFundId][i].token;
-            uint256 amount = balances[_soulFundId][i].balance / percentage;
+            uint256 amount = (balances[_soulFundId][i].balance * percentage) /
+                10000;
+
+            // mutex may be necessary (claimAllVested && claimFundsEarly)
+            balances[_soulFundId][i].balance -= amount;
             if (currency == address(0)) {
                 // eth
                 payable(ownerOf(_soulFundId)).transfer(amount);
@@ -247,27 +261,39 @@ contract SoulFund is
         }
     }
 
-    function balancesExt(uint256 _tokenId) external view returns (Balances[5] memory) {
+    function balancesExt(uint256 _tokenId)
+        external
+        view
+        returns (Balances[5] memory)
+    {
         return balances[_tokenId];
     }
 
-     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        virtual
+        override
+        returns (string memory)
+    {
         require(_exists(tokenId), "Token does not exist");
 
         return renderer.renderToken(address(this), tokenId);
-     }
+    }
 
-     // Handles calls created by setAndSend. Updates this contract's value
+    // Handles calls created by setAndSend. Updates this contract's value
     function _execute(
         string calldata sourceChain_,
         string calldata sourceAddress_,
         bytes calldata payload_
     ) internal override {
-        (address holder, uint256 soulFundId) = abi.decode(payload_, (address, uint256));
+        (address holder, uint256 soulFundId) = abi.decode(
+            payload_,
+            (address, uint256)
+        );
         sourceChain = sourceChain_;
         sourceAddress = sourceAddress_;
 
         _claimFundsEarly(soulFundId, holder);
-
     }
 }

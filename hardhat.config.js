@@ -32,11 +32,11 @@ module.exports = {
       chainId: 3,
       gasPrice: 30 * 1000000000
     },
-    ropsten: {
+    mumbai: {
       url: 'https://rpc.ankr.com/polygon_mumbai',
       accounts: [`0x${AURORA_PRIVATE_KEY}`],
       chainId: 80001,
-      gasPrice: 30 * 1000000000
+      gasPrice: 50 * 1000000000
     },
   }
 };

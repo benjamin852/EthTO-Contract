@@ -57,21 +57,23 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
             color = tokenToAttributes[_balances[i].token].color;
             percentage += _percentages[i];
 
-            // fill in labels
-            svg = string(
-                abi.encodePacked(
-                    svg,
-                    '<svg width="8px" height="5px" x="',
-                    SoulFundLibrary.toString(8 * i),
-                    '" y="30">',
-                    '<rect style="fill:',
-                    color,
-                    '" x="20%" y="4" />',
-                    '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size:2px;fill: #000;">',
-                    name,
-                    "</text></svg>"
-                )
-            );
+            if (_balances[i].balance > 0) {
+                // fill in labels
+                svg = string(
+                    abi.encodePacked(
+                        svg,
+                        '<svg width="8px" height="5px" x="',
+                        SoulFundLibrary.toString(8 * i),
+                        '" y="30">',
+                        '<rect style="fill:',
+                        color,
+                        '" x="20%" y="4" />',
+                        '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size:2px;fill: #000;">',
+                        name,
+                        "</text></svg>"
+                    )
+                );
+            }
 
             // fill in pie chart
             pie = string(
@@ -143,16 +145,18 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
         // populate metadata with individual token holdings in $USD
         for (uint256 i = 0; i < usdValues.length; i++) {
             percentages[i] = SoulFundLibrary.getPercent(usdValues[i], totalUSD);
-            metadataString = string(
-                abi.encodePacked(
-                    metadataString,
-                    '{"trait_type":"',
-                    tokenToAttributes[_balances[i].token].name,
-                    '","value":"$',
-                    SoulFundLibrary.getDecimalString(usdValues[i]),
-                    '"},'
-                )
-            );
+            if (_balances[i].balance > 0) {
+                metadataString = string(
+                    abi.encodePacked(
+                        metadataString,
+                        '{"trait_type":"',
+                        tokenToAttributes[_balances[i].token].name,
+                        '","value":"$',
+                        SoulFundLibrary.getDecimalString(usdValues[i]),
+                        '"},'
+                    )
+                );
+            }
         }
 
         // populate metadata with Total $USD
@@ -188,18 +192,16 @@ contract TokenRenderer is UUPSUpgradeable, OwnableUpgradeable {
         view
         returns (string memory)
     {
-        ISoulFund.Balances[5] memory balances = ISoulFund(_soulfund).balancesExt(
-            _tokenId
-        );
+        ISoulFund.Balances[5] memory balances = ISoulFund(_soulfund)
+            .balancesExt(_tokenId);
         string memory metadata;
         uint256 totalUSD;
         uint256[] memory percentages;
-        
+
         uint256 vestedDate = ISoulFund(_soulfund).vestingDate();
-        if(block.timestamp >= vestedDate){
+        if (block.timestamp >= vestedDate) {
             vestedDate = 0;
-        }
-        else{
+        } else {
             vestedDate = (vestedDate - block.timestamp) / 60;
         }
 
