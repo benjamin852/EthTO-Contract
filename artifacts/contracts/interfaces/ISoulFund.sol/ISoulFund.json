@@ -42,6 +42,12 @@
           "internalType": "address",
           "name": "newNftAddress",
           "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
         }
       ],
       "name": "NewWhitelistedNFT",

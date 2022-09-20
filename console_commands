@@ -1,0 +1,16 @@
+let fund = upgrades.deployProxy("soulFund");
+
+let soull = await upgrades.deployProxy(soulFund, [
+  "0xc5DcAC3e02f878FE995BF71b1Ef05153b71da8BE",
+  1660136865,
+  "0x1e0D240181a053CC1Fb04928ccc047DDb77adA92",
+]);
+
+await soull.safeMint("0x03555aA97c7Ece30Afe93DAb67224f3adA79A60f");
+
+await soull.depositFund(
+  0,
+  "0x0000000000000000000000000000000000000000",
+  100000,
+  { value: 100000 }
+);

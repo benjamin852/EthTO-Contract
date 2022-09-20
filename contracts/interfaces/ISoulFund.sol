@@ -15,7 +15,7 @@ interface ISoulFund {
         address beneficary
     );
 
-    event NewWhitelistedNFT(address newNftAddress);
+    event NewWhitelistedNFT(address newNftAddress, uint256 tokenId);
 
     event VestedFundsClaimedEarly(
         uint256 tokenId,
@@ -46,5 +46,5 @@ interface ISoulFund {
 
     function claimAllVestedFunds(uint256 _soulFundId) external payable;
 
-    function vestingDate() external view returns(uint256);
+    function vestingDate() external view returns (uint256);
 }

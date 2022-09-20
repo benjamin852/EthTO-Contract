@@ -2,26 +2,25 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
+// import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+// import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+// import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "./interfaces/ISoulFundFactory.sol";
 import "./SoulFund.sol";
 
-contract SoulFundFactory is
-    ISoulFundFactory,
-    Initializable,
-    PausableUpgradeable,
-    AccessControlUpgradeable
-{
+contract SoulFundFactory is ISoulFundFactory, Initializable {
+    // PausableUpgradeable
+    // AccessControlUpgradeable
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
-    using CountersUpgradeable for CountersUpgradeable.Counter;
+    // using CountersUpgradeable for CountersUpgradeable.Counter;
 
-    CountersUpgradeable.Counter private _fundCounter;
+    // CountersUpgradeable.Counter private _fundCounter;
+
+    uint256 public fundCounter;
 
     address dataAddress;
-    
+
     //fundId => fundAddress
     mapping(uint256 => address) public funds;
 
@@ -31,17 +30,17 @@ contract SoulFundFactory is
     }
 
     function initialize(address _data) public initializer {
-        __Pausable_init();
+        // __Pausable_init();
         dataAddress = _data;
     }
 
-    function pause() public onlyRole(PAUSER_ROLE) {
-        _pause();
-    }
+    // function pause() public onlyRole(PAUSER_ROLE) {
+    //     _pause();
+    // }
 
-    function unpause() public onlyRole(PAUSER_ROLE) {
-        _unpause();
-    }
+    // function unpause() public onlyRole(PAUSER_ROLE) {
+    //     _unpause();
+    // }
 
     function deployNewSoulFund(address _beneficiary, uint256 _vestingDate)
         external
@@ -61,14 +60,14 @@ contract SoulFundFactory is
             "SoulFundFactory.deployNewSoulFund: no funds deposited"
         );
 
-        _fundCounter.increment();
+        fundCounter += 1;
 
         SoulFund soulFund = new SoulFund{value: msg.value}();
         soulFund.initialize(_beneficiary, _vestingDate, dataAddress);
-        funds[_fundCounter.current()] = address(soulFund);
+        funds[fundCounter] = address(soulFund);
 
         emit NewSoulFundTokenDeployed(
-            address(soulFund),
+            address(this),
             _beneficiary,
             _vestingDate,
             msg.value

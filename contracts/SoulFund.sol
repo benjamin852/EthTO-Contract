@@ -1,37 +1,37 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+// import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+// import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+// import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
+// import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 
 import "./interfaces/ISoulFund.sol";
-import "./interfaces/ITokenRenderer.sol";
+
+// import "./interfaces/ITokenRenderer.sol";
 
 contract SoulFund is
     ISoulFund,
     Initializable,
     ERC721Upgradeable,
-    PausableUpgradeable,
     AccessControlUpgradeable
 {
     /*** LIBRARIES ***/
-    using CountersUpgradeable for CountersUpgradeable.Counter;
+    // using CountersUpgradeable for CountersUpgradeable.Counter;
 
     /*** CONSTANTS ***/
-    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    // bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant GRANTER_ROLE = keccak256("GRANTER_ROLE");
     bytes32 public constant BENEFICIARY_ROLE = keccak256("BENEFICIARY_ROLE");
 
     uint256 public constant FIVE_PERCENT = 500;
 
     /*** STORAGE ***/
-    CountersUpgradeable.Counter private _tokenIdCounter;
+    uint256 private _tokenIdCounter;
 
     uint256 public vestingDate;
 
@@ -53,7 +53,7 @@ contract SoulFund is
     //number of currencies in this soulfund NFT (max is five)
     mapping(uint256 => uint256) public numCurrencies;
 
-    ITokenRenderer renderer;
+    // ITokenRenderer renderer;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() payable {
@@ -66,25 +66,24 @@ contract SoulFund is
         address _data
     ) public payable initializer {
         __ERC721_init("SoulFund", "SLF");
-        __Pausable_init();
+        // __Pausable_init();
         __AccessControl_init();
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(PAUSER_ROLE, msg.sender);
+        // _grantRole(PAUSER_ROLE, msg.sender);
         _grantRole(GRANTER_ROLE, msg.sender);
         _grantRole(BENEFICIARY_ROLE, _beneficiary);
-
         vestingDate = _vestingDate;
-        renderer = ITokenRenderer(_data);
+        // renderer = ITokenRenderer(_data);
     }
 
-    function pause() public onlyRole(PAUSER_ROLE) {
-        _pause();
-    }
+    // function pause() public onlyRole(PAUSER_ROLE) {
+    //     _pause();
+    // }
 
-    function unpause() public onlyRole(PAUSER_ROLE) {
-        _unpause();
-    }
+    // function unpause() public onlyRole(PAUSER_ROLE) {
+    //     _unpause();
+    // }
 
     function depositFund(
         uint256 soulFundId,
@@ -128,8 +127,8 @@ contract SoulFund is
     }
 
     function safeMint(address _to) public onlyRole(GRANTER_ROLE) {
-        uint256 tokenId = _tokenIdCounter.current();
-        _tokenIdCounter.increment();
+        uint256 tokenId = _tokenIdCounter;
+        _tokenIdCounter += 1;
         _safeMint(_to, tokenId);
     }
 
@@ -137,7 +136,7 @@ contract SoulFund is
         address _from,
         address _to,
         uint256 _tokenId
-    ) internal override whenNotPaused {
+    ) internal override {
         require(
             _from == address(0),
             "SoulFund: soul bound token cannot be transferred"
@@ -172,7 +171,7 @@ contract SoulFund is
 
         whitelistedNfts[_tokenId][_newNftAddress] = true;
 
-        emit NewWhitelistedNFT(_newNftAddress);
+        emit NewWhitelistedNFT(_newNftAddress, _tokenId);
     }
 
     //Claim 5% of funds in contract with claimToken (nft)
@@ -189,7 +188,7 @@ contract SoulFund is
         address beneficiary = ownerOf(_soulFundId);
 
         require(
-            IERC721(_nftAddress).ownerOf(_nftId) == beneficiary,
+            ERC721Upgradeable(_nftAddress).ownerOf(_nftId) == beneficiary,
             "SoulFund.claimFundsEarly: beneficiary does not own nft required to claim funds"
         );
         require(
@@ -275,6 +274,6 @@ contract SoulFund is
     {
         require(_exists(tokenId), "Token does not exist");
 
-        return renderer.renderToken(address(this), tokenId);
+        // return renderer.renderToken(address(this), tokenId);
     }
 }
