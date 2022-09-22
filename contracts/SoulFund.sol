@@ -1,37 +1,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-// import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+// import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 // import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
-// import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-// import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+// import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 
 import "./interfaces/ISoulFund.sol";
 
 // import "./interfaces/ITokenRenderer.sol";
 
-contract SoulFund is
-    ISoulFund,
-    Initializable,
-    ERC721Upgradeable,
-    AccessControlUpgradeable
-{
+contract SoulFund is ISoulFund, ERC721, Pausable, AccessControl {
     /*** LIBRARIES ***/
-    // using CountersUpgradeable for CountersUpgradeable.Counter;
+    using Counters for Counters.Counter;
 
     /*** CONSTANTS ***/
-    // bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant GRANTER_ROLE = keccak256("GRANTER_ROLE");
     bytes32 public constant BENEFICIARY_ROLE = keccak256("BENEFICIARY_ROLE");
 
     uint256 public constant FIVE_PERCENT = 500;
 
     /*** STORAGE ***/
-    uint256 private _tokenIdCounter;
+    Counters.Counter private _tokenIdCounter;
 
     uint256 public vestingDate;
 
@@ -56,40 +51,50 @@ contract SoulFund is
     // ITokenRenderer renderer;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() payable {
-        _disableInitializers();
-    }
-
-    function initialize(
+    constructor(
         address _beneficiary,
         uint256 _vestingDate,
         address _data
-    ) public payable initializer {
-        __ERC721_init("SoulFund", "SLF");
-        // __Pausable_init();
-        __AccessControl_init();
-
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        // _grantRole(PAUSER_ROLE, msg.sender);
-        _grantRole(GRANTER_ROLE, msg.sender);
-        _grantRole(BENEFICIARY_ROLE, _beneficiary);
+    ) payable ERC721("SoulFund", "SLF") {
+        // _disableInitializers();
         vestingDate = _vestingDate;
-        // renderer = ITokenRenderer(_data);
     }
 
-    // function pause() public onlyRole(PAUSER_ROLE) {
-    //     _pause();
+    // function initialize(
+    //     address _beneficiary,
+    //     uint256 _vestingDate,
+    //     address _data
+    // ) public payable {
+    //     __ERC721_init("SoulFund", "SLF");
+    //     // __Pausable_init();
+    //     // __AccessControl_init();
+
+    //     // _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    //     // _grantRole(PAUSER_ROLE, msg.sender);
+    //     // _grantRole(GRANTER_ROLE, msg.sender);
+    //     // _grantRole(BENEFICIARY_ROLE, _beneficiary);
+    //     vestingDate = _vestingDate;
+    //     // renderer = ITokenRenderer(_data);
     // }
 
-    // function unpause() public onlyRole(PAUSER_ROLE) {
-    //     _unpause();
-    // }
+    function pause() public onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+
+    function unpause() public onlyRole(PAUSER_ROLE) {
+        _unpause();
+    }
 
     function depositFund(
         uint256 soulFundId,
         address currency,
         uint256 amount
     ) external payable override onlyRole(GRANTER_ROLE) {
+        // function depositFund(
+        //     uint256 soulFundId,
+        //     address currency,
+        //     uint256 amount
+        // ) external payable override {
         // require that currency exists or max has not been reached
         require(
             currencyIndices[soulFundId][currency] >= 0 &&
@@ -127,8 +132,8 @@ contract SoulFund is
     }
 
     function safeMint(address _to) public onlyRole(GRANTER_ROLE) {
-        uint256 tokenId = _tokenIdCounter;
-        _tokenIdCounter += 1;
+        uint256 tokenId = _tokenIdCounter.current();
+        _tokenIdCounter.increment();
         _safeMint(_to, tokenId);
     }
 
@@ -149,7 +154,7 @@ contract SoulFund is
     function supportsInterface(bytes4 _interfaceId)
         public
         view
-        override(ERC721Upgradeable, AccessControlUpgradeable)
+        override(ERC721, AccessControl)
         returns (bool)
     {
         return super.supportsInterface(_interfaceId);
@@ -188,7 +193,7 @@ contract SoulFund is
         address beneficiary = ownerOf(_soulFundId);
 
         require(
-            ERC721Upgradeable(_nftAddress).ownerOf(_nftId) == beneficiary,
+            ERC721(_nftAddress).ownerOf(_nftId) == beneficiary,
             "SoulFund.claimFundsEarly: beneficiary does not own nft required to claim funds"
         );
         require(

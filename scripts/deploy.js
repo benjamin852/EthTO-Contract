@@ -41,8 +41,8 @@ async function main() {
 
   console.log("TokenRenderer address:", tokenrenderer.address);
 
-  const beneficiary = deployer.address;
-  const vestingDate = 1691650712;
+  // const beneficiary = deployer.address;
+  // const vestingDate = 1691650712;
 
   const SoulFundFactory = await ethers.getContractFactory("SoulFundFactory");
 
@@ -50,21 +50,20 @@ async function main() {
     tokenrenderer.address,
   ]);
 
+  console.log("SounFundFactory Address:", soulfundFactory.address);
   await soulfundFactory.deployed();
 
-  console.log("SounFundFactory Address:", soulfundFactory.address);
+  // const SoulFund = await ethers.getContractFactory("SoulFund");
 
-  const SoulFund = await ethers.getContractFactory("SoulFund");
+  // // For upgradeable version
+  // const soulfund = await upgrades.deployProxy(SoulFund, [
+  //   beneficiary,
+  //   vestingDate,
+  //   tokenrenderer.address,
+  // ]);
+  // await soulfund.deployed();
 
-  // For upgradeable version
-  const soulfund = await upgrades.deployProxy(SoulFund, [
-    beneficiary,
-    vestingDate,
-    tokenrenderer.address,
-  ]);
-  await soulfund.deployed();
-
-  console.log("SoulFund address:", soulfund.address);
+  // console.log("SoulFund address:", soulfund.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
