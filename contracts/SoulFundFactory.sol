@@ -9,11 +9,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./interfaces/ISoulFundFactory.sol";
 import "./SoulFund.sol";
 
-contract SoulFundFactory is
-    ISoulFundFactory,
-    Initializable,
-
-{
+contract SoulFundFactory is ISoulFundFactory, Initializable {
     // bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
     // using CountersUpgradeable for CountersUpgradeable.Counter;

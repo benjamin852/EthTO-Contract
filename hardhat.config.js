@@ -34,6 +34,13 @@ module.exports = {
       chainId: 1313161555,
       gasPrice: 120 * 1000000000,
     },
+    goerli: {
+      url: "https://rpc.ankr.com/eth_goerli",
+      accounts: [`0x${PRIVATE_KEY}`],
+      chainId: 5,
+      gasPrice: 30 * 1000000000,
+      blockGasLimit: 100000000429720, // whatever you want here
+    },
     rinkeby: {
       url: "https://rpc.ankr.com/eth_rinkeby",
       accounts: [`0x${PRIVATE_KEY}`],
