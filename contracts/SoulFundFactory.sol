@@ -2,7 +2,7 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-// import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 // import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 // import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 // import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
@@ -10,7 +10,7 @@ import "./interfaces/ISoulFundFactory.sol";
 import "./SoulFund.sol";
 
 contract SoulFundFactory is ISoulFundFactory, Initializable {
-    // bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
     // using CountersUpgradeable for CountersUpgradeable.Counter;
 
@@ -39,11 +39,12 @@ contract SoulFundFactory is ISoulFundFactory, Initializable {
     //     _unpause();
     // }
 
-    function deployNewSoulFund(address _beneficiary, uint256 _vestingDate)
-        external
-        payable
-        override
-    {
+    function deployNewSoulFund(
+        address _beneficiary,
+        uint256 _vestingDate,
+        address _data,
+        address _acceptedMeritTokens
+    ) external payable {
         require(
             _beneficiary != address(0),
             "SoulFundFactory.deployNewSoulFund: must have at least one beneficiary"
@@ -64,7 +65,8 @@ contract SoulFundFactory is ISoulFundFactory, Initializable {
         SoulFund soulFund = new SoulFund{value: msg.value}(
             _beneficiary,
             _vestingDate,
-            dataAddress
+            dataAddress,
+            _acceptedMeritTokens
         );
         // soulFund.initialize(_beneficiary, _vestingDate, dataAddress);
         // funds[_fundCounter.current()] = address(soulFund);

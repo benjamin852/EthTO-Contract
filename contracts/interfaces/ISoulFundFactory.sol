@@ -11,7 +11,8 @@ interface ISoulFundFactory {
 
     function deployNewSoulFund(
         address _beneficiary,
-        uint256 _vestingDate
-        // uint256 _depositAmount  FOR ERC20s <<<<<<
+        uint256 _vestingDate,
+        address _data,
+        address _acceptedMeritTokens
     ) external payable;
 }

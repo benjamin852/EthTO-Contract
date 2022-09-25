@@ -11,6 +11,13 @@ async function main() {
   // const deployer = new ethers.Wallet(process.env.AURORA_PRIVATE_KEY, provider);
   const deployer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 
+  const MeritToken = await ethers.getContractFactory("MeritTokenTest");
+  const meritToken = await MeritToken.deploy();
+
+  await meritToken.deployed();
+
+  console.log("merit token address", meritToken.address);
+
   console.log("Deployer account:", deployer.address);
 
   console.log("Deployer balance:", (await deployer.getBalance()).toString());

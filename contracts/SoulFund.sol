@@ -5,21 +5,21 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 // import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
+// import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 // import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 import "./interfaces/ISoulFund.sol";
 
-// import "./interfaces/ITokenRenderer.sol";
+import "./interfaces/ITokenRenderer.sol";
 
-contract SoulFund is ISoulFund, ERC721, Pausable, AccessControl {
+contract SoulFund is ISoulFund, ERC721, AccessControl {
     /*** LIBRARIES ***/
     using Counters for Counters.Counter;
 
     /*** CONSTANTS ***/
-    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    // bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant GRANTER_ROLE = keccak256("GRANTER_ROLE");
     bytes32 public constant BENEFICIARY_ROLE = keccak256("BENEFICIARY_ROLE");
 
@@ -48,16 +48,20 @@ contract SoulFund is ISoulFund, ERC721, Pausable, AccessControl {
     //number of currencies in this soulfund NFT (max is five)
     mapping(uint256 => uint256) public numCurrencies;
 
-    // ITokenRenderer renderer;
+    ITokenRenderer renderer;
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(
         address _beneficiary,
         uint256 _vestingDate,
-        address _data
+        address _data,
+        address _meritToken
     ) payable ERC721("SoulFund", "SLF") {
-        // _disableInitializers();
         vestingDate = _vestingDate;
+        whitelistedNfts[1][_meritToken] = true;
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(GRANTER_ROLE, msg.sender);
+        _grantRole(BENEFICIARY_ROLE, _beneficiary);
+        renderer = ITokenRenderer(_data);
     }
 
     // function initialize(
@@ -77,13 +81,13 @@ contract SoulFund is ISoulFund, ERC721, Pausable, AccessControl {
     //     // renderer = ITokenRenderer(_data);
     // }
 
-    function pause() public onlyRole(PAUSER_ROLE) {
-        _pause();
-    }
+    // function pause() public onlyRole(PAUSER_ROLE) {
+    //     _pause();
+    // }
 
-    function unpause() public onlyRole(PAUSER_ROLE) {
-        _unpause();
-    }
+    // function unpause() public onlyRole(PAUSER_ROLE) {
+    //     _unpause();
+    // }
 
     function depositFund(
         uint256 soulFundId,
